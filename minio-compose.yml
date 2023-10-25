@@ -1,0 +1,33 @@
+version: '3.7'
+
+networks:
+  backend-net:
+    driver: bridge
+
+services:
+
+  minio:
+    image: quay.io/minio/minio
+    container_name: minio
+    volumes:
+      - ./minio-data:/data
+      - ./minio.env:/etc/config.env
+    environment:
+      - "MINIO_CONFIG_ENV_FILE=/etc/config.env"
+    command: server --console-address ":9001"
+#      - 'minio'
+#      - 'server'
+#      - '--console-address ":9001"'
+#    restart: unless-stopped
+    networks:
+      - backend-net
+    ports:
+      - 9400:9000
+      - 9401:9001
+    labels:
+      org.label-schema.group: "storage"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
