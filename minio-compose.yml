@@ -3,6 +3,8 @@ version: '3.7'
 networks:
   backend-net:
     driver: bridge
+  traefik-net:
+    external: true
 
 services:
 
@@ -10,22 +12,26 @@ services:
     image: quay.io/minio/minio
     container_name: minio
     volumes:
-      - ./minio-data:/data
+      - /var/share/minio:/data
       - ./minio.env:/etc/config.env
     environment:
       - "MINIO_CONFIG_ENV_FILE=/etc/config.env"
     command: server --console-address ":9001"
-#      - 'minio'
-#      - 'server'
-#      - '--console-address ":9001"'
-#    restart: unless-stopped
+    restart: unless-stopped
     networks:
       - backend-net
+      - traefik-net
     ports:
       - 9400:9000
       - 9401:9001
     labels:
-      org.label-schema.group: "storage"
+      - "traefik.enable=true"
+      - "traefik.http.routers.minio.rule=Host(`minio.dieren.gerull.nl`)"
+      - "traefik.http.services.minio.loadbalancer.server.port=9000"
+      - "traefik.docker.network=traefik-net"
+      - "traefik.http.routers.minio-console.rule=Host(`minio-console.dieren.gerull.nl`)"
+      - "traefik.http.services.minio-console.loadbalancer.server.port=9001"
+      - "org.label-schema.group=storage"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 30s
